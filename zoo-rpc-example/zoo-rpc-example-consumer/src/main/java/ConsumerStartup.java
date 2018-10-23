@@ -1,5 +1,6 @@
 import com.github.zerowise.rpc.codec.RpcDecoder;
 import com.github.zerowise.rpc.codec.RpcEncoder;
+import com.github.zerowise.rpc.common.AddressWithWeight;
 import com.github.zerowise.rpc.common.RpcRequest;
 import com.github.zerowise.rpc.common.RpcResponse;
 import com.github.zerowise.rpc.handler.RpcHander;
@@ -23,7 +24,7 @@ public class ConsumerStartup {
                     protected void initChannel(Channel ch) throws Exception {
                         ch.pipeline().addLast(new RpcDecoder(RpcRequest.class), new RpcEncoder(RpcResponse.class), rpcHander);
                     }
-                }, 8888, System.out::print);
+                }, new AddressWithWeight("localhost:8888", 100), System.out::print);
 
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> zooRpcServer.close()));
