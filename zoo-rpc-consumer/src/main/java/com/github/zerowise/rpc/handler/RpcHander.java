@@ -8,6 +8,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import net.sf.cglib.reflect.FastClass;
 import net.sf.cglib.reflect.FastMethod;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +23,7 @@ import java.util.stream.Stream;
  **/
 @ChannelHandler.Sharable
 public class RpcHander extends SimpleChannelInboundHandler<RpcRequest> {
-
+    private static Logger logger = LoggerFactory.getLogger(RpcHander.class);
     private ExecutorService executorService;
 
     private Map<String, Object> rpcService;
@@ -47,6 +49,9 @@ public class RpcHander extends SimpleChannelInboundHandler<RpcRequest> {
     }
 
     public void execute(ChannelHandlerContext ctx, RpcRequest msg) {
+
+        logger.info("{}", msg.getMessageId());
+
         executorService.execute(() -> {
             RpcResponse rpcResponse;
             try {

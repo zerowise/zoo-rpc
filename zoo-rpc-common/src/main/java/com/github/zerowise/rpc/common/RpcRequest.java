@@ -1,4 +1,6 @@
 package com.github.zerowise.rpc.common;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
 import java.lang.reflect.Method;
 
 /**
@@ -60,5 +62,14 @@ public class RpcRequest {
 
     public void setArgumemts(Object[] argumemts) {
         this.argumemts = argumemts;
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this)
+                .append("messageId", messageId)
+                .append("serviceName", serviceName)
+                .append("methodName", methodName)
+                .toString();
     }
 }

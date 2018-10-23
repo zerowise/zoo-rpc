@@ -31,8 +31,8 @@ public class RemoteServer implements Closeable {
             ServerBootstrap serverBootstrap = new ServerBootstrap();
             serverBootstrap.group(boss, worker).channelFactory(Epoll.isAvailable() ? EpollServerDomainSocketChannel::new : NioServerSocketChannel::new)
                     .childHandler(channelHandlerSupplier.get())
-                    .option(ChannelOption.TCP_NODELAY, true)
-                    .option(ChannelOption.SO_BACKLOG, 128)
+                    .childOption(ChannelOption.TCP_NODELAY, true)
+                    .childOption(ChannelOption.SO_BACKLOG, 128)
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
             serverBootstrap.bind(port).sync().addListener((ChannelFutureListener) future -> consumer.accept(future.channel().remoteAddress()));
         } catch (Exception e) {

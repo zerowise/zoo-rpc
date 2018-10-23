@@ -1,5 +1,6 @@
 package com.github.zerowise.rpc.common;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -20,7 +21,7 @@ public class RpcResult {
     public Object getResult() throws Throwable {
         try {
             lock.lock();
-            condition.await();
+            condition.await(100, TimeUnit.SECONDS);
             if (error != null) {
                 throw error;
             }

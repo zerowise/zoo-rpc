@@ -9,6 +9,8 @@ import com.github.zerowise.rpc.common.RpcResult;
 import com.github.zerowise.rpc.handler.RpcClientHandler;
 import com.github.zerowise.rpc.remote.FixedClusterRemoteClient;
 import com.github.zerowise.rpc.remote.IRemoteClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;
@@ -22,12 +24,15 @@ import java.util.stream.Collectors;
  **/
 public class ZooRpcClient {
 
+    private static Logger logger = LoggerFactory.getLogger(ZooRpcClient.class);
 
     public static <T> T newProxyInstance(Class<T> clazz, SyncResultListener syncResultListener, IRemoteClient remoteClient) {
         return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, (proxy, method, args) -> {
+            //logger.info("start exec:{}", method.getName());
             RpcRequest rpcRequest = new RpcRequest(UUID.randomUUID().toString(), method, args);
             RpcResult rpcResult = syncResultListener.onMessageWrite(rpcRequest.getMessageId());
             remoteClient.write(rpcRequest);
+            logger.info("end exec:{}", rpcRequest);
             return rpcResult.getResult();
         });
     }
@@ -39,7 +44,7 @@ public class ZooRpcClient {
     }
 
 
-    public static Map<Class, Object> startFixed(String clusterStrs, String loadBalancerName, String pack) throws IOException {
+    public static Map<Class, Object> startFixed(String clusterStrs, String loadBalancerName, String pack) throws Exception {
         RpcClientHandler rpcClientHandler = new RpcClientHandler();
 
         IRemoteClient remoteClient = new FixedClusterRemoteClient(clusterStrs, loadBalancerName, ch -> ch.pipeline().addLast(
