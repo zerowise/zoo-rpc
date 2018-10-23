@@ -9,8 +9,6 @@ import com.github.zerowise.rpc.common.RpcResult;
 import com.github.zerowise.rpc.handler.RpcClientHandler;
 import com.github.zerowise.rpc.remote.FixedClusterRemoteClient;
 import com.github.zerowise.rpc.remote.IRemoteClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;
@@ -24,7 +22,7 @@ import java.util.stream.Collectors;
  **/
 public class ZooRpcClient {
 
-    private static Logger logger = LoggerFactory.getLogger(ZooRpcClient.class);
+//    private static Logger logger = LoggerFactory.getLogger(ZooRpcClient.class);
 
     public static <T> T newProxyInstance(Class<T> clazz, SyncResultListener syncResultListener, IRemoteClient remoteClient) {
         return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, (proxy, method, args) -> {
@@ -32,7 +30,7 @@ public class ZooRpcClient {
             RpcRequest rpcRequest = new RpcRequest(UUID.randomUUID().toString(), method, args);
             RpcResult rpcResult = syncResultListener.onMessageWrite(rpcRequest.getMessageId());
             remoteClient.write(rpcRequest);
-            logger.info("end exec:{}", rpcRequest);
+//            logger.info("end exec:{}", rpcRequest);
             return rpcResult.getResult();
         });
     }

@@ -21,6 +21,7 @@ public class RpcDecoder extends LengthFieldBasedFrameDecoder {
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
         ByteBuf byteBuf = (ByteBuf) super.decode(ctx, in);
         byte[] bytes = new byte[byteBuf.readableBytes()];
+        byteBuf.readBytes(bytes);
         return SerializationUtil.deserialize(bytes, clazz);
     }
 }

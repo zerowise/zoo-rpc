@@ -16,6 +16,8 @@ import java.util.function.Consumer;
 
 public class RemoteClient implements IRemoteClient {
 
+    //private static final Logger log = LoggerFactory.getLogger(RemoteClient.class);
+
     private EventLoopGroup worker;
     private GenericObjectPool<Channel> channelPool;
     private int weight;
