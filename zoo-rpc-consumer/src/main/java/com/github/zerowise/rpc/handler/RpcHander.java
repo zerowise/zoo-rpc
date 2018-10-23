@@ -2,7 +2,6 @@ package com.github.zerowise.rpc.handler;
 
 import com.github.zerowise.rpc.common.RpcRequest;
 import com.github.zerowise.rpc.common.RpcResponse;
-import com.github.zerowise.rpc.consumer.RpcService;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;

@@ -1,4 +1,4 @@
-package com.github.zerowise.rpc.consumer;
+package com.github.zerowise.rpc.handler;
 
 import java.lang.annotation.*;
 
