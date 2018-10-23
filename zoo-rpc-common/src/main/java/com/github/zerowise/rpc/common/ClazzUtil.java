@@ -11,104 +11,137 @@ import java.net.URLDecoder;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.regex.Pattern;
 
 /**
  ** @createtime : 2018/10/23 3:17 PM
  **/
 public class ClazzUtil {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public static final String CLASS_SUFFIX = ".class";
+    private static final Logger log = LoggerFactory.getLogger(ClazzUtil.class);
 
-    private static final Pattern INNER_PATTERN = java.util.regex.Pattern.compile("\\$(\\d+).", java.util.regex.Pattern.CASE_INSENSITIVE);
+    /**
+     * 扫描包路径下所有的class文件
+     *
+     * @param pkg
+     * @return
+     */
+    public static Set<Class<?>> getClzFromPkg(String pkg) {
+        Set<Class<?>> classes = new LinkedHashSet<>();
 
-    public static Set<Class<?>> findCandidateComponents(String packageName) throws IOException {
-        if (packageName.endsWith(".")) {
-            packageName = packageName.substring(0, packageName.length() - 1);
-        }
-        Map<String, String> classMap = new HashMap<>(32);
-        String path = packageName.replace(".", "/");
-        Enumeration<URL> urls = findAllClassPathResources(path);
-        while (urls != null && urls.hasMoreElements()) {
-            URL url = urls.nextElement();
-            String protocol = url.getProtocol();
-            if ("file".equals(protocol)) {
-                String file = URLDecoder.decode(url.getFile(), "UTF-8");
-                File dir = new File(file);
-                if (dir.isDirectory()) {
-                    parseClassFile(dir, packageName, classMap);
-                } else {
-                    throw new IllegalArgumentException("file must be directory");
+        String pkgDirName = pkg.replace('.', '/');
+        try {
+            Enumeration<URL> urls = ClazzUtil.class.getClassLoader().getResources(pkgDirName);
+            while (urls.hasMoreElements()) {
+                URL url = urls.nextElement();
+                String protocol = url.getProtocol();
+                if ("file".equals(protocol)) {// 如果是以文件的形式保存在服务器上
+                    String filePath = URLDecoder.decode(url.getFile(), "UTF-8");// 获取包的物理路径
+                    findClassesByFile(pkg, filePath, classes);
+                } else if ("jar".equals(protocol)) {// 如果是jar包文件
+                    JarFile jar = ((JarURLConnection) url.openConnection()).getJarFile();
+                    findClassesByJar(pkg, jar, classes);
                 }
-            } else if ("jar".equals(protocol)) {
-                parseJarFile(url, classMap);
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
-        Set<Class<?>> set = new HashSet<>(classMap.size());
-
-        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        for (String key : classMap.keySet()) {
-            String className = classMap.get(key);
-            try {
-                set.add(classloader.loadClass(className));
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-        }
-        return set;
+        return classes;
     }
 
-    private static void parseClassFile(File dir, String packageName, Map<String, String> classMap) {
-        if (dir.isDirectory()) {
-            File[] files = dir.listFiles();
-            for (File file : files) {
-                parseClassFile(file, packageName, classMap);
-            }
-        } else if (dir.getName().endsWith(CLASS_SUFFIX)) {
-            String name = dir.getPath();
-            name = name.substring(name.indexOf("classes") + 8).replace("\\", ".");
-            addToClassMap(name, classMap);
+    /**
+     * 扫描包路径下的所有class文件
+     *
+     * @param pkgName 包名
+     * @param pkgPath 包对应的绝对地址
+     * @param classes 保存包路径下class的集合
+     */
+    private static void findClassesByFile(String pkgName, String pkgPath, Set<Class<?>> classes) {
+        File dir = new File(pkgPath);
+        if (!dir.exists() || !dir.isDirectory()) {
+            return;
         }
-    }
 
-    private static void parseJarFile(URL url, Map<String, String> classMap) throws IOException {
-        JarFile jar = ((JarURLConnection) url.openConnection()).getJarFile();
-        Enumeration<JarEntry> entries = jar.entries();
-        while (entries.hasMoreElements()) {
-            JarEntry entry = entries.nextElement();
-            if (entry.isDirectory()) {
+
+        // 过滤获取目录，or class文件
+        File[] dirfiles = dir.listFiles(pathname -> pathname.isDirectory() || pathname.getName().endsWith("class"));
+
+
+        if (dirfiles == null || dirfiles.length == 0) {
+            return;
+        }
+
+
+        String className;
+        Class clz;
+        for (File f : dirfiles) {
+            if (f.isDirectory()) {
+                findClassesByFile(pkgName + "." + f.getName(),
+                        pkgPath + "/" + f.getName(),
+                        classes);
                 continue;
             }
-            String name = entry.getName();
-            if (name.endsWith(CLASS_SUFFIX)) {
-                addToClassMap(name.replace("/", "."), classMap);
+
+
+            // 获取类名，干掉 ".class" 后缀
+            className = f.getName();
+            className = className.substring(0, className.length() - 6);
+
+            // 加载类
+            clz = loadClass(pkgName + "." + className);
+            if (clz != null) {
+                classes.add(clz);
             }
         }
     }
 
-    private static boolean addToClassMap(String name, Map<String, String> classMap) {
 
-        if (INNER_PATTERN.matcher(name).find()) { //过滤掉匿名内部类
-            System.out.println("anonymous inner class:" + name);
-            return false;
+    /**
+     * 扫描包路径下的所有class文件
+     *
+     * @param pkgName 包名
+     * @param jar     jar文件
+     * @param classes 保存包路径下class的集合
+     */
+    private static void findClassesByJar(String pkgName, JarFile jar, Set<Class<?>> classes) {
+        String pkgDir = pkgName.replace(".", "/");
+
+
+        Enumeration<JarEntry> entry = jar.entries();
+
+        JarEntry jarEntry;
+        String name, className;
+        Class<?> claze;
+        while (entry.hasMoreElements()) {
+            jarEntry = entry.nextElement();
+
+            name = jarEntry.getName();
+            if (name.charAt(0) == '/') {
+                name = name.substring(1);
+            }
+
+
+            if (jarEntry.isDirectory() || !name.startsWith(pkgDir) || !name.endsWith(".class")) {
+                // 非指定包路径， 非class文件
+                continue;
+            }
+
+
+            // 去掉后面的".class", 将路径转为package格式
+            className = name.substring(0, name.length() - 6);
+            claze = loadClass(className.replace("/", "."));
+            if (claze != null) {
+                classes.add(claze);
+            }
         }
-        System.out.println("class:" + name);
-        if (name.indexOf("$") > 0) { //内部类
-            System.out.println("inner class:" + name);
-        }
-        if (!classMap.containsKey(name)) {
-            classMap.put(name, name.substring(0, name.length() - 6)); //去掉.class
-        }
-        return true;
     }
 
-    private static Enumeration<URL> findAllClassPathResources(String path) throws IOException {
-        if (path.startsWith("/")) {
-            path = path.substring(1);
+    private static Class<?> loadClass(String fullClzName) {
+        try {
+            return Thread.currentThread().getContextClassLoader().loadClass(fullClzName);
+        } catch (ClassNotFoundException e) {
+            log.error("load class error! clz: {}, e:{}", fullClzName, e);
         }
-        Enumeration<URL> urls = Thread.currentThread().getContextClassLoader().getResources(path);
-        return urls;
+        return null;
     }
 }

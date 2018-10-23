@@ -1,6 +1,6 @@
 package com.github.zerowise.rpc.remote;
 
-import com.github.zerowise.rpc.common.LoadBalancer;
+import com.github.zerowise.rpc.lb.LoadBalancer;
 
 import java.io.IOException;
 import java.util.Map;

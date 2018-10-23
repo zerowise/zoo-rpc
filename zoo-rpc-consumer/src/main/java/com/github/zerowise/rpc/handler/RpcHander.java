@@ -36,7 +36,6 @@ public class RpcHander extends SimpleChannelInboundHandler<RpcRequest> {
         execute(ctx, msg);
     }
 
-
     public void register(Object obj, Predicate<Class> p) {
         if (obj.getClass().isAnnotationPresent(RpcService.class)) {
             Class clazz = obj.getClass();
@@ -63,7 +62,8 @@ public class RpcHander extends SimpleChannelInboundHandler<RpcRequest> {
             ctx.writeAndFlush(rpcResponse);
         });
     }
-    public void shutdown(){
+
+    public void shutdown() {
         executorService.shutdown();
     }
 }
