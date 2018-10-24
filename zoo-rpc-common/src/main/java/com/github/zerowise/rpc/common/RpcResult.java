@@ -1,5 +1,6 @@
 package com.github.zerowise.rpc.common;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -9,38 +10,18 @@ import java.util.concurrent.locks.ReentrantLock;
  ** @createtime : 2018/10/2310:51 AM
  **/
 public class RpcResult {
-
-    private Lock lock = new ReentrantLock();
-
-    private Condition condition = lock.newCondition();
-
-    private Object result;
-
-    private Throwable error;
+    private CompletableFuture completableFuture;
 
     public Object getResult() throws Throwable {
-        try {
-            lock.lock();
-            condition.await(100, TimeUnit.SECONDS);
-            if (error != null) {
-                throw error;
-            }
-            return result;
-        } finally {
-            lock.unlock();
-        }
+        completableFuture = new CompletableFuture();
+        return completableFuture;
     }
 
     public void onResult(RpcResponse rpcResponse) {
-        try {
-            lock.lock();
-            this.result = rpcResponse.getResult();
-            this.error = rpcResponse.getError();
-        } catch (Exception e) {
-            this.error = e;
-        } finally {
-            condition.signal();
-            lock.unlock();
+        if(rpcResponse.getError()!=null){
+            completableFuture.completeExceptionally(rpcResponse.getError());
+        }else{
+            completableFuture.complete(rpcResponse.getResult());
         }
     }
 

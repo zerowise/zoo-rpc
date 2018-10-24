@@ -15,6 +15,7 @@ import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -24,11 +25,11 @@ public class ZooRpcClient {
 
 //    private static Logger logger = LoggerFactory.getLogger(ZooRpcClient.class);
 
-    public static <T> T newProxyInstance(Class<T> clazz, SyncResultListener syncResultListener, IRemoteClient remoteClient) {
+    public static <T> T newProxyInstance(Class<T> clazz, ResultListener resultListener, IRemoteClient remoteClient) {
         return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{clazz}, (proxy, method, args) -> {
             //logger.info("start exec:{}", method.getName());
             RpcRequest rpcRequest = new RpcRequest(UUID.randomUUID().toString(), method, args);
-            RpcResult rpcResult = syncResultListener.onMessageWrite(rpcRequest.getMessageId());
+            RpcResult rpcResult = resultListener.onMessageWrite(rpcRequest.getMessageId(), method.getReturnType() == CompletableFuture.class);
             remoteClient.write(rpcRequest);
 //            logger.info("end exec:{}", rpcRequest);
             return rpcResult.getResult();
@@ -36,9 +37,9 @@ public class ZooRpcClient {
     }
 
 
-    public static Map<Class, Object> makeProxy(String pack, SyncResultListener syncResultListener, IRemoteClient remoteClient) throws IOException {
+    public static Map<Class, Object> makeProxy(String pack, ResultListener resultListener, IRemoteClient remoteClient) throws IOException {
         Set<Class<?>> clazzes = ClazzUtil.getClzFromPkg(pack);
-        return clazzes.stream().filter(c -> c.isInterface()).collect(Collectors.toMap(c -> c, c -> newProxyInstance(c, syncResultListener, remoteClient)));
+        return clazzes.stream().filter(c -> c.isInterface()).collect(Collectors.toMap(c -> c, c -> newProxyInstance(c, resultListener, remoteClient)));
     }
 
 
