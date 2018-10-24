@@ -9,6 +9,7 @@ import com.github.zerowise.rpc.common.RpcResult;
 import com.github.zerowise.rpc.handler.RpcClientHandler;
 import com.github.zerowise.rpc.remote.FixedClusterRemoteClient;
 import com.github.zerowise.rpc.remote.IRemoteClient;
+import com.github.zerowise.rpc.remote.RemoteClient;
 import com.github.zerowise.rpc.remote.ZooKeeperRemoteClient;
 
 import java.io.IOException;
@@ -44,6 +45,24 @@ public class ZooRpcClient {
     }
 
 
+    public static Map<Class, Object> startSingal(String serverAddr, String pack) throws Exception {
+        RpcClientHandler rpcClientHandler = new RpcClientHandler();
+
+        IRemoteClient remoteClient = RemoteClient.build(serverAddr, ch -> ch.pipeline().addLast(
+                new RpcDecoder(RpcResponse.class), new RpcEncoder(RpcRequest.class), rpcClientHandler));
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                remoteClient.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
+
+        return makeProxy(pack, rpcClientHandler, remoteClient);
+    }
+
+
     public static Map<Class, Object> startFixed(String clusterStrs, String loadBalancerName, String pack) throws Exception {
         RpcClientHandler rpcClientHandler = new RpcClientHandler();
 
@@ -62,7 +81,7 @@ public class ZooRpcClient {
     }
 
 
-    public static Map startZooClient(String pack, ClientConf clientConf) throws Exception {
+    public static Map<Class, Object> startZooClient(String pack, ClientConf clientConf) throws Exception {
         RpcClientHandler rpcClientHandler = new RpcClientHandler();
 
         IRemoteClient remoteClient = new ZooKeeperRemoteClient(clientConf.getZooKeeperAddrs(), clientConf.getLoadBalanceClazzName(), clientConf.getGroup(), clientConf.getApp(), ch -> ch.pipeline().addLast(

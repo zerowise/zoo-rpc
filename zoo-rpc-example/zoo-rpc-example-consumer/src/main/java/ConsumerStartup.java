@@ -20,7 +20,7 @@ public class ConsumerStartup {
         rpcHander.register(new AsycCalServiceImpl(), cls -> true);
 
 
-        RemoteServer zooRpcServer = new RemoteServer(1, 4, () ->
+        RemoteServer remoteServer = new RemoteServer(1, 4, () ->
                 new ChannelInitializer<Channel>() {
                     @Override
                     protected void initChannel(Channel ch) throws Exception {
@@ -29,6 +29,6 @@ public class ConsumerStartup {
                 }, new AddressWithWeight(HostAndPort.fromString("localhost:8888"), 100).toSocketAddr(), System.out::print);
 
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> zooRpcServer.close()));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> remoteServer.close()));
     }
 }
