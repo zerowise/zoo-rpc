@@ -5,6 +5,7 @@ import com.github.zerowise.rpc.common.RpcRequest;
 import com.github.zerowise.rpc.common.RpcResponse;
 import com.github.zerowise.rpc.handler.RpcHander;
 import com.github.zerowise.rpc.remote.RemoteServer;
+import com.google.common.net.HostAndPort;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 
@@ -16,6 +17,7 @@ public class ConsumerStartup {
         RpcHander rpcHander = new RpcHander();
 
         rpcHander.register(new CalServiceImpl(), cls -> true);
+        rpcHander.register(new AsycCalServiceImpl(), cls -> true);
 
 
         RemoteServer zooRpcServer = new RemoteServer(1, 4, () ->
@@ -24,7 +26,7 @@ public class ConsumerStartup {
                     protected void initChannel(Channel ch) throws Exception {
                         ch.pipeline().addLast(new RpcDecoder(RpcRequest.class), new RpcEncoder(RpcResponse.class), rpcHander);
                     }
-                }, new AddressWithWeight("localhost:8888", 100), System.out::print);
+                }, new AddressWithWeight(HostAndPort.fromString("localhost:8888"), 100).toSocketAddr(), System.out::print);
 
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> zooRpcServer.close()));

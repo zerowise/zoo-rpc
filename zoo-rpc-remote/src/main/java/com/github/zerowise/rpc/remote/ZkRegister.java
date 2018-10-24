@@ -1,6 +1,7 @@
 package com.github.zerowise.rpc.remote;
 
 import com.github.zerowise.rpc.common.AddressWithWeight;
+import com.google.common.net.HostAndPort;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -25,32 +26,32 @@ public class ZkRegister {
     private CuratorFramework client;
     private ConcurrentMap<String, PathChildrenCache> watcherMap;
 
-    public void init(String serverList) {
+    public void init(String serverList, String group, String app, AddressWithWeight addressWithWeight) {
         watcherMap = new ConcurrentHashMap<>();
         RetryPolicy retryPolicy = new ForeverRetryPolicy(1000, 60 * 1000);
         client = CuratorFrameworkFactory.newClient(serverList, 1000 * 10, 1000 * 3, retryPolicy);
         client.start();
+
+        register(group, app, addressWithWeight);
     }
 
-    public void register(String group, String app, String serverAddress, int serverWeight) {
-        Objects.requireNonNull(client, "call init first");
+    private void register(String group, String app, AddressWithWeight addressWithWeight) {
+        final String path = "/zoo/" + group + "/" + app + "/"
+                + byte2HexStr(addressWithWeight.getServerAddr().getBytes(StandardCharsets.UTF_8));
 
-        final String path = "/zoo/" + group + "/" + app  + "/"
-                + byte2HexStr(serverAddress.getBytes(StandardCharsets.UTF_8));
-
-        byte[] data = new AddressWithWeight(serverAddress, serverWeight).toBytes();
+        byte[] data = addressWithWeight.toBytes();
 
         try {
             if (client.checkExists().forPath(path) != null) {
                 if (logger.isInfoEnabled()) {
-                    logger.info("删除zk已存在节点: " + path + ", " + serverAddress);
+                    logger.info("删除zk已存在节点: {},{}", path, addressWithWeight.getServerAddr());
                 }
 
                 client.delete().forPath(path);
             }
         } catch (Exception e) {
             if (logger.isErrorEnabled()) {
-                logger.error("zk已存在节点删除失败, " + path + ", " + serverAddress, e);
+                logger.error("zk已存在节点删除失败: {},{}", path, addressWithWeight.getServerAddr(), e);
             }
         }
 
@@ -62,22 +63,22 @@ public class ZkRegister {
                     .forPath(path, data);
 
             if (logger.isInfoEnabled()) {
-                logger.info("zk注册成功, " + path + ", " + serverAddress + "@" + serverWeight);
+                logger.info("zk注册成功, {},{}", path, addressWithWeight);
             }
         } catch (Exception e) {
             if (logger.isErrorEnabled()) {
-                logger.error("zk注册失败, " + path + ", " + serverAddress + "@" + serverWeight, e);
+                logger.error("zk注册失败, {},{}", path, addressWithWeight, e);
             }
         }
 
         if (!watcherMap.containsKey(path)) {
-            addRegisterWatcher(group, app, serverAddress, serverWeight);
+            addRegisterWatcher(group, app, addressWithWeight);
         }
     }
 
-    private void addRegisterWatcher(String group, String app, String serverAddress, int serverWeight) {
+    private void addRegisterWatcher(String group, String app, AddressWithWeight addressWithWeight) {
         final String path = "/zoo/" + group + "/" + app + "/"
-                + byte2HexStr(serverAddress.getBytes(StandardCharsets.UTF_8));
+                + byte2HexStr(addressWithWeight.getServerAddr().getBytes(StandardCharsets.UTF_8));
 
         if (watcherMap.containsKey(path)) {
             return;
@@ -103,11 +104,10 @@ public class ZkRegister {
                         }
 
                         if (logger.isInfoEnabled()) {
-                            logger.info("获得zk连接尝试重新注册, " + path + ", " + serverAddress + "@" + serverWeight);
+                            logger.info("获得zk连接尝试重新注册, {},{}", path, addressWithWeight);
                         }
 
-                        ZkRegister.this.register(group, app, serverAddress, serverWeight);
-
+                        ZkRegister.this.register(group, app, addressWithWeight);
                         break;
 
                     default:
@@ -121,14 +121,15 @@ public class ZkRegister {
             watcherMap.put(path, watcher);
         } catch (Exception e) {
             if (logger.isErrorEnabled()) {
-                logger.error("zk监听失败, " + path, e);
+                logger.error("zk监听失败, {}", path, e);
             }
         }
     }
 
-    public void unregister(String group, String app, String serverAddress) {
+
+    public void unregister(String group, String app, AddressWithWeight addressWithWeight) {
         String path = "/zoo/" + group + "/" + app + "/"
-                + byte2HexStr(serverAddress.getBytes(StandardCharsets.UTF_8));
+                + byte2HexStr(addressWithWeight.getServerAddr().getBytes(StandardCharsets.UTF_8));
 
         try {
             PathChildrenCache watcher = watcherMap.remove(path);
@@ -137,7 +138,7 @@ public class ZkRegister {
             }
         } catch (Exception e) {
             if (logger.isErrorEnabled()) {
-                logger.error("warcher关闭失败, " + path + ", " + serverAddress, e);
+                logger.error("warcher关闭失败, {},{}", path, addressWithWeight.getServerAddr(), e);
             }
         }
 
@@ -147,11 +148,11 @@ public class ZkRegister {
             }
 
             if (logger.isInfoEnabled()) {
-                logger.info("zk注销成功, " + path + ", " + serverAddress);
+                logger.info("zk注销成功, {},{}", path, addressWithWeight.getServerAddr());
             }
         } catch (Exception e) {
             if (logger.isErrorEnabled()) {
-                logger.error("zk注销失败, " + path + ", " + serverAddress, e);
+                logger.error("zk注销失败, {},{}", path, addressWithWeight.getServerAddr(), e);
             }
         }
     }
@@ -172,7 +173,6 @@ public class ZkRegister {
         client.close();
         client = null;
     }
-
 
 
     /**

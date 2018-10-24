@@ -1,0 +1,10 @@
+[
+  {
+    "zooKeeperAddrs": "127.0.0.1:",
+    "group": "",
+    "app": "",
+    "ipAddr": "127.0.0.1",
+    "serverWeight": 100
+  }
+]
+

@@ -1,0 +1,10 @@
+[
+  {
+    "zooKeeperAddrs": "127.0.0.1:2181",
+    "group": "bigData",
+    "app": "calc",
+    "ipAddr": "127.0.0.1:8888",
+    "serverWeight": 100
+  }
+]
+

@@ -1,5 +1,7 @@
 package com.github.zerowise.rpc.common;
 
+import com.google.common.net.HostAndPort;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.charset.Charset;
@@ -9,7 +11,7 @@ import java.nio.charset.Charset;
  **/
 public class AddressWithWeight implements Weightable {
 
-    private String serverAddress;
+    private HostAndPort hostAndPort;
     private int weight;
 
     public AddressWithWeight(byte[] bytes) {
@@ -18,12 +20,12 @@ public class AddressWithWeight implements Weightable {
 
     public AddressWithWeight(String addrInfos) {
         String[] ts = addrInfos.split("@");
-        serverAddress = ts[0];
+        hostAndPort = HostAndPort.fromString(ts[0]);
         weight = Integer.parseInt(ts[1]);
     }
 
-    public AddressWithWeight(String serverAddress, int serverWeight) {
-        this.serverAddress = serverAddress;
+    public AddressWithWeight(HostAndPort hostAndPort, int serverWeight) {
+        this.hostAndPort = hostAndPort;
         this.weight = serverWeight;
     }
 
@@ -33,20 +35,19 @@ public class AddressWithWeight implements Weightable {
     }
 
     public String getServerAddr() {
-        return serverAddress;
+        return hostAndPort.toString();
     }
 
     public byte[] toBytes() {
-        return (serverAddress + "@" + weight).getBytes(Charset.defaultCharset());
+        return toString().getBytes(Charset.defaultCharset());
     }
 
     public SocketAddress toSocketAddr() {
-        String[] tmps = serverAddress.split(":");
-        return new InetSocketAddress(tmps[0], Integer.parseInt(tmps[1]));
+        return new InetSocketAddress(hostAndPort.getHostText(), hostAndPort.getPort());
     }
 
     @Override
     public String toString() {
-        return serverAddress + "@" + weight;
+        return hostAndPort.toString() + "@" + weight;
     }
 }

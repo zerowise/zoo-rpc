@@ -35,18 +35,16 @@ public class ZooKeeperRemoteClient implements IRemoteClient {
     private CuratorFramework client;
     private List<PathChildrenCache> watchers;
 
-    public ZooKeeperRemoteClient(String zooKeeperAddrs, String loadBalanceClazzName) throws Exception{
+    public ZooKeeperRemoteClient(String zooKeeperAddrs, String loadBalanceClazzName, String group, String app, Consumer<Channel> consumer) throws Exception {
         watchers = Collections.synchronizedList(new ArrayList<>());
         RetryPolicy retryPolicy = new ForeverRetryPolicy(1000, 60 * 1000);
         client = CuratorFrameworkFactory.newClient(zooKeeperAddrs, 1000 * 10, 1000 * 3, retryPolicy);
         client.start();
         iRemoteClients = new ConcurrentHashMap<>();
         loadBalancer = (LoadBalancer<IRemoteClient>) Class.forName(loadBalanceClazzName).newInstance();
-    }
 
-    public void registerChannel(Consumer<Channel> consumer, String group, String app) {
         this.consumer = consumer;
-        Objects.requireNonNull(client, "call init first");
+
         final String path = "/zoo/" + group + "/" + app;
         final PathChildrenCache watcher = new PathChildrenCache(client, path, true);
         PathChildrenCacheListener pathChildrenCacheListener = new PathChildrenCacheListener() {
@@ -62,7 +60,6 @@ public class ZooKeeperRemoteClient implements IRemoteClient {
                 boolean isChanged = true;
 
                 switch (event.getType()) {
-
                     case INITIALIZED:
                         waitForInitializedEvent = false;
 

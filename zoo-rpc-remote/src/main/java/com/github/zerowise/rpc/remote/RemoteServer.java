@@ -10,6 +10,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.io.Closeable;
+import java.net.SocketAddress;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -20,7 +21,7 @@ public class RemoteServer implements Closeable {
     private EventLoopGroup boss;
     private EventLoopGroup worker;
 
-    public RemoteServer(int bossThreadNum, int workerThreadNum, Supplier<ChannelHandler> channelHandlerSupplier, AddressWithWeight addressWithWeight, Consumer<AddressWithWeight> consumer) {
+    public RemoteServer(int bossThreadNum, int workerThreadNum, Supplier<ChannelHandler> channelHandlerSupplier, SocketAddress socketAddress, Consumer<SocketAddress> consumer) {
         try {
             boss = Epoll.isAvailable() ? new EpollEventLoopGroup(bossThreadNum) : new NioEventLoopGroup(bossThreadNum);
             worker = Epoll.isAvailable() ? new EpollEventLoopGroup(workerThreadNum) : new NioEventLoopGroup(workerThreadNum);
@@ -31,9 +32,9 @@ public class RemoteServer implements Closeable {
                     .childOption(ChannelOption.TCP_NODELAY, true)
                     .option(ChannelOption.SO_BACKLOG, 128)
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
-            ChannelFuture future = serverBootstrap.bind(addressWithWeight.toSocketAddr()).sync();
+            ChannelFuture future = serverBootstrap.bind(socketAddress).sync();
             if (future.isSuccess()) {
-                consumer.accept(addressWithWeight);
+                consumer.accept(socketAddress);
             }
         } catch (Exception e) {
             e.printStackTrace();
