@@ -28,7 +28,7 @@
 
     <Loggers>
         <!-- 3rdparty Loggers -->
-        <logger name="org.springframework.core" level="info">
+        <logger name="org.apache.zookeeper.Environment" level="off">
         </logger>
         <logger name="org.springframework.beans" level="info">
         </logger>

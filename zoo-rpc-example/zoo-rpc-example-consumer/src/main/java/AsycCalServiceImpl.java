@@ -11,12 +11,12 @@ public class AsycCalServiceImpl implements AsycCalService {
     @Override
     public CompletableFuture<Integer> add(int ma, int mb) {
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                Thread.sleep(1000);
-                return ma + mb;
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            //try {
+            //Thread.sleep(1000);
+            return ma + mb;
+            // } catch (InterruptedException e) {
+            //  throw new RuntimeException(e);
+            //}
         });
 
     }

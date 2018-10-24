@@ -9,6 +9,7 @@ import com.github.zerowise.rpc.common.RpcResult;
 import com.github.zerowise.rpc.handler.RpcClientHandler;
 import com.github.zerowise.rpc.remote.FixedClusterRemoteClient;
 import com.github.zerowise.rpc.remote.IRemoteClient;
+import com.github.zerowise.rpc.remote.ZooKeeperRemoteClient;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;
@@ -60,4 +61,21 @@ public class ZooRpcClient {
         return makeProxy(pack, rpcClientHandler, remoteClient);
     }
 
+
+    public static Map startZooClient(String pack, ClientConf clientConf) throws Exception {
+        RpcClientHandler rpcClientHandler = new RpcClientHandler();
+
+        IRemoteClient remoteClient = new ZooKeeperRemoteClient(clientConf.getZooKeeperAddrs(), clientConf.getLoadBalanceClazzName(), clientConf.getGroup(), clientConf.getApp(), ch -> ch.pipeline().addLast(
+                new RpcDecoder(RpcResponse.class), new RpcEncoder(RpcRequest.class), rpcClientHandler));
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                remoteClient.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
+
+        return makeProxy(pack, rpcClientHandler, remoteClient);
+    }
 }

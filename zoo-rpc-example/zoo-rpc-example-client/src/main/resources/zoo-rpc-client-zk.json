@@ -1,0 +1,8 @@
+[
+    {
+        "zooKeeperAddrs": "127.0.0.1:2181",
+        "loadBalanceClazzName":"com.github.zerowise.rpc.lb.RandomLoadBalancer",
+        "group": "bigData",
+        "app": "calc",
+    }
+]

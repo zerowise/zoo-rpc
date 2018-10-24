@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -35,6 +37,8 @@ public class ZooKeeperRemoteClient implements IRemoteClient {
     private CuratorFramework client;
     private List<PathChildrenCache> watchers;
 
+    private CountDownLatch initSuccess = null;
+
     public ZooKeeperRemoteClient(String zooKeeperAddrs, String loadBalanceClazzName, String group, String app, Consumer<Channel> consumer) throws Exception {
         watchers = Collections.synchronizedList(new ArrayList<>());
         RetryPolicy retryPolicy = new ForeverRetryPolicy(1000, 60 * 1000);
@@ -47,6 +51,9 @@ public class ZooKeeperRemoteClient implements IRemoteClient {
 
         final String path = "/zoo/" + group + "/" + app;
         final PathChildrenCache watcher = new PathChildrenCache(client, path, true);
+
+        initSuccess = new CountDownLatch(1);
+
         PathChildrenCacheListener pathChildrenCacheListener = new PathChildrenCacheListener() {
             private final ConcurrentMap<String, Integer> serverWithWeight = new ConcurrentHashMap<>();
             private volatile boolean waitForInitializedEvent = true;
@@ -131,6 +138,9 @@ public class ZooKeeperRemoteClient implements IRemoteClient {
                 logger.error("zk监听失败, " + path, e);
             }
         }
+
+        initSuccess.await(2000, TimeUnit.SECONDS);
+        initSuccess = null;
     }
 
     private void onChange(ConcurrentMap<String, Integer> serverWithWeight) {
@@ -150,8 +160,12 @@ public class ZooKeeperRemoteClient implements IRemoteClient {
 
         serverWithWeight.forEach((key, value) -> iRemoteClients.computeIfAbsent(key, t -> RemoteClient.build(key + "@" + value, consumer)));
         loadBalancer.updateWeightable(Lists.newArrayList(iRemoteClients.values()));
-    }
 
+        if (initSuccess != null) {
+            initSuccess.countDown();
+        }
+
+    }
 
     @Override
     public void write(Object request) throws Exception {

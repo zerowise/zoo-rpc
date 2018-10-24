@@ -9,6 +9,8 @@ import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -16,7 +18,7 @@ import java.util.function.Consumer;
 
 public class RemoteClient implements IRemoteClient {
 
-    //private static final Logger log = LoggerFactory.getLogger(RemoteClient.class);
+    private static final Logger log = LoggerFactory.getLogger(RemoteClient.class);
 
     private EventLoopGroup worker;
     private GenericObjectPool<Channel> channelPool;
@@ -54,7 +56,7 @@ public class RemoteClient implements IRemoteClient {
 
         PooledObjectFactory channelFactory = new PooledObjectFactory<Channel>() {
             public PooledObject<Channel> makeObject() throws Exception {
-                return new DefaultPooledObject<>(bootstrap.connect(socketAddress).channel());
+                return new DefaultPooledObject<>(bootstrap.connect(socketAddress).sync().channel());
             }
 
             public void destroyObject(PooledObject<Channel> pooledObject) throws Exception {
@@ -94,6 +96,9 @@ public class RemoteClient implements IRemoteClient {
         Channel channel = null;
         try {
             channel = channelPool.borrowObject();
+
+            log.info("---{}---{}", channel.hashCode(), channel.isActive());
+
             channel.writeAndFlush(request);
         } finally {
             channelPool.returnObject(channel);
