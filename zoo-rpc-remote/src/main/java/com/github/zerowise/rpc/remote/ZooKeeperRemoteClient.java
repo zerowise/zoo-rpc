@@ -37,7 +37,7 @@ public class ZooKeeperRemoteClient implements IRemoteClient {
     private CuratorFramework client;
     private List<PathChildrenCache> watchers;
 
-    private CountDownLatch initSuccess = null;
+    private CountDownLatch initSuccess;
 
     public ZooKeeperRemoteClient(String zooKeeperAddrs, String loadBalanceClazzName, String group, String app, Consumer<Channel> consumer) throws Exception {
         watchers = Collections.synchronizedList(new ArrayList<>());

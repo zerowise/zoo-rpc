@@ -14,6 +14,7 @@
         <module>zoo-rpc-consumer</module>
         <module>zoo-rpc-client</module>
         <module>zoo-rpc-example</module>
+        <module>zoo-rpc-zk</module>
     </modules>
 
     <properties>
