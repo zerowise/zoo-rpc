@@ -19,13 +19,13 @@ public class ZookeeperRpcProvider implements IRemoteProvider {
     public ZookeeperRpcProvider(String registyAddrs,List<String> addresses){
         zkRegister = new ZkRegister(registyAddrs);
 
-        addresses.stream().map(s-> {
-            String[] tmp = s.split("@");
-
-
-
-            //zkRegister.register();
-        });
+//        addresses.stream().map(s-> {
+//            String[] tmp = s.split("@");
+//
+//
+//
+//            zkRegister.register();
+//        });
     }
 
     @Override
