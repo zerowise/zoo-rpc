@@ -108,7 +108,7 @@ public class ZooKeeperConsumerStartup {
 
         ServerConf serverConf = serverConfs.get(0);
 
-        com.github.zerowise.ZkRegister zkRegister = new com.github.zerowise.ZkRegister();
+        com.github.zerowise.zk.ZkRegister zkRegister = new com.github.zerowise.zk.ZkRegister();
 
         AddressWithWeight addressWithWeight = new AddressWithWeight(HostAndPort.fromString(serverConf.getIpAddr()), serverConf.getServerWeight());
         RemoteServer zooRpcServer = new RemoteServer(1, 4, () ->

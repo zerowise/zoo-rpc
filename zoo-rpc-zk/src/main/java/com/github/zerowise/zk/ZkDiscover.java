@@ -1,4 +1,4 @@
-package com.github.zerowise;
+package com.github.zerowise.zk;
 
 import com.google.common.collect.Maps;
 import org.apache.curator.framework.CuratorFramework;

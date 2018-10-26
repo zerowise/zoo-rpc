@@ -1,4 +1,4 @@
-package com.github.zerowise;
+package com.github.zerowise.zk;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;

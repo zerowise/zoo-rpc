@@ -15,6 +15,7 @@
         <module>zoo-rpc-client</module>
         <module>zoo-rpc-example</module>
         <module>zoo-rpc-zk</module>
+        <module>zoo-rpc-provider</module>
     </modules>
 
     <properties>
@@ -22,7 +23,7 @@
         <slf4j.version>1.7.25</slf4j.version>
         <log4j.version>2.8.2</log4j.version>
         <curator-recipes.version>2.12.0</curator-recipes.version>
-        <netty.version>4.0.45.Final</netty.version>
+        <netty.version>4.1.30.Final</netty.version>
         <guava.version>20.0</guava.version>
     </properties>
     <dependencies>
@@ -34,11 +35,30 @@
     </dependencies>
     <dependencyManagement>
         <dependencies>
+            <!-- netty -->
             <dependency>
                 <groupId>io.netty</groupId>
-                <artifactId>netty-all</artifactId>
+                <artifactId>netty-codec</artifactId>
                 <version>${netty.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-buffer</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-transport</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-transport-native-epoll</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+
+
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-pool2</artifactId>
